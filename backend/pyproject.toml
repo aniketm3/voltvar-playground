@@ -1,0 +1,12 @@
+[project]
+name = "voltvar-backend"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "volt-var-control @ ../../volt-VAR-control",
+]
+
+[tool.uv]
+package = false
