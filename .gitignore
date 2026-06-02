@@ -1,0 +1,14 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Logs & temp
+*.log
+.DS_Store

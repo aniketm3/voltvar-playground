@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import asyncio
 from contextlib import asynccontextmanager
-from concurrent.futures import ThreadPoolExecutor
-from typing import Annotated
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,7 +11,6 @@ from pydantic import BaseModel, Field
 from simulator import SimulationEngine, PolicyName
 
 _engine: SimulationEngine | None = None
-_executor = ThreadPoolExecutor(max_workers=1)  # OpenDSS is a singleton
 
 
 @asynccontextmanager
@@ -24,7 +20,6 @@ async def lifespan(app: FastAPI):
     _engine = SimulationEngine()
     print("Ready.")
     yield
-    _executor.shutdown(wait=False)
 
 
 app = FastAPI(title="VoltVAR Explorer API", lifespan=lifespan)
@@ -53,29 +48,16 @@ async def health():
 
 @app.post("/simulate")
 async def simulate(req: SimulateRequest):
+    # async def keeps this on the event loop's main thread.
+    # OpenDSS native lib crashes when called from a thread pool (sync def).
+    # Blocking the event loop is fine for a single-user local demo.
     if _engine is None:
         raise HTTPException(503, "Engine not ready")
 
-    loop = asyncio.get_event_loop()
-
     if req.mode == "full_episode":
-        result = await loop.run_in_executor(
-            _executor,
-            _engine.simulate_episode,
-            req.policy,
-            req.solar_scales,
-            req.cloud_covers,
-            req.load_scale,
+        return _engine.simulate_episode(
+            req.policy, req.solar_scales, req.cloud_covers, req.load_scale
         )
-    else:
-        result = await loop.run_in_executor(
-            _executor,
-            _engine.simulate_step,
-            req.policy,
-            req.timestep,
-            req.solar_scales,
-            req.cloud_covers,
-            req.load_scale,
-        )
-
-    return result
+    return _engine.simulate_step(
+        req.policy, req.timestep, req.solar_scales, req.cloud_covers, req.load_scale
+    )

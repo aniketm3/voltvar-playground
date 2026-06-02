@@ -5,8 +5,11 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.111",
     "uvicorn[standard]>=0.30",
-    "volt-var-control @ ../../volt-VAR-control",
+    "volt-var-control",
 ]
+
+[tool.uv.sources]
+volt-var-control = { path = "../../volt-VAR-control", editable = true }
 
 [tool.uv]
 package = false
