@@ -20,8 +20,17 @@ from volt_var_env.profiles import solar_profile, load_profile
 
 MODELS_ROOT = Path(__file__).parents[1] / "models"
 
-SAC_POLICIES = ["sac_both", "sac_none", "lag_sac_both", "lag_sac_curriculum"]
-PolicyName = Literal["sac_both", "sac_none", "lag_sac_both", "lag_sac_curriculum", "droop", "zero"]
+SAC_POLICIES = [
+    "sac_both", "sac_none", "lag_sac_both",          # ieee13
+    "sac_solar_load", "lag_sac_solar_load",           # ieee33 / res9 / sub18
+    "lag_sac_curriculum",                             # all feeders
+]
+PolicyName = Literal[
+    "sac_both", "sac_none", "lag_sac_both",
+    "sac_solar_load", "lag_sac_solar_load",
+    "lag_sac_curriculum",
+    "droop", "zero",
+]
 
 
 class SimulationEngine:

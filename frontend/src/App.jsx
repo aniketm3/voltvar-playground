@@ -9,8 +9,10 @@ import { getGrids, simulateStep, simulateEpisode } from './api.js'
 
 const POLICY_LABELS = {
   lag_sac_both:       'Lag-SAC + DR ★',
+  lag_sac_solar_load: 'Lag-SAC ★',
   lag_sac_curriculum: 'Lag-SAC + Curriculum',
   sac_both:           'SAC + DR',
+  sac_solar_load:     'SAC',
   sac_none:           'SAC (no DR)',
   droop:              'Droop (IEEE 1547)',
   zero:               'Zero VAR',

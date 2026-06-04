@@ -16,7 +16,12 @@ from pydantic import BaseModel, Field
 from grid_registry import GRIDS
 from simulator import SimulationEngine
 
-PolicyName = Literal["sac_both", "sac_none", "lag_sac_both", "lag_sac_curriculum", "droop", "zero"]
+PolicyName = Literal[
+    "sac_both", "sac_none", "lag_sac_both",
+    "sac_solar_load", "lag_sac_solar_load",
+    "lag_sac_curriculum",
+    "droop", "zero",
+]
 
 _engines: dict[str, SimulationEngine] = {}
 
