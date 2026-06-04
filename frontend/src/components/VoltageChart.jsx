@@ -6,10 +6,10 @@ import {
 const BUSES = ['632','633','634','645','646','671','684','611','652','680','692','675']
 
 function barColor(v) {
-  if (!v) return '#30363d'
-  if (v < 0.95 || v > 1.05) return '#f85149'
-  if (v < 0.97 || v > 1.03) return '#d29922'
-  return '#3fb950'
+  if (!v) return '#d6d3d1'
+  if (v < 0.95 || v > 1.05) return '#dc2626'
+  if (v < 0.97 || v > 1.03) return '#d97706'
+  return '#16a34a'
 }
 
 function formatTime(step) {
@@ -22,13 +22,13 @@ const CHART_STYLE = {
   background: 'transparent',
 }
 
-const AXIS_STYLE = { fill: '#8b949e', fontSize: 10 }
+const AXIS_STYLE = { fill: '#78716c', fontSize: 10 }
 const TOOLTIP_STYLE = {
-  background: '#161b22',
-  border: '1px solid #30363d',
+  background: '#ffffff',
+  border: '1px solid #ddd9d0',
   borderRadius: 4,
   fontSize: 11,
-  color: '#e6edf3',
+  color: '#1c1917',
 }
 
 // ── Single-step bar chart ─────────────────────────────────────────────────────
@@ -88,7 +88,7 @@ function EpisodeChart({ episode, currentStep }) {
         <ReferenceLine y={1.05} stroke="#f85149" strokeDasharray="3 3" strokeWidth={1} />
         <ReferenceLine
           x={formatTime(currentStep)}
-          stroke="#58a6ff"
+          stroke="#2563eb"
           strokeDasharray="4 2"
           strokeWidth={1}
         />

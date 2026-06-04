@@ -3,6 +3,7 @@ import GridGraph from './components/GridGraph.jsx'
 import VoltageChart from './components/VoltageChart.jsx'
 import ControlPanel from './components/ControlPanel.jsx'
 import StatsPanel from './components/StatsPanel.jsx'
+import InfoModal from './components/InfoModal.jsx'
 import { simulateStep, simulateEpisode } from './api.js'
 
 const POLICIES = [
@@ -32,6 +33,7 @@ export default function App() {
   const [loading,      setLoading]      = useState(false)
   const [epLoading,    setEpLoading]    = useState(false)
   const [error,        setError]        = useState(null)
+  const [showInfo,     setShowInfo]     = useState(false)
 
   const debounceRef = useRef(null)
 
@@ -108,7 +110,10 @@ export default function App() {
 
         {error  && <span className="error-banner">{error}</span>}
         {loading && <span className="loading-dot" />}
+        <button className="info-btn" onClick={() => setShowInfo(true)} title="About this app">ⓘ</button>
       </header>
+
+      {showInfo && <InfoModal onClose={() => setShowInfo(false)} />}
 
       {/* ── Body ── */}
       <div className="app-body">
@@ -147,6 +152,7 @@ export default function App() {
         {/* Right: controls + stats */}
         <div className="right-col">
           <ControlPanel
+            timestep={timestep}
             loadScale={loadScale}
             onLoadScale={handleLoadScale}
             solarScales={solarScales}

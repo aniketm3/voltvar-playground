@@ -6,9 +6,13 @@ behind a threading.Lock. FastAPI dispatches them via run_in_executor.
 
 from __future__ import annotations
 
+import sys
 import threading
 from pathlib import Path
 from typing import Literal
+
+# Add repo root so volt_var_env is importable without an editable install.
+sys.path.insert(0, str(Path(__file__).parents[1]))
 
 import numpy as np
 from opendssdirect import dss
@@ -19,8 +23,8 @@ from volt_var_env.baselines import DroopController, ZeroController
 from volt_var_env.env import _PV_NAMES, _PV_KVA, _BASE_LOADS
 from volt_var_env.profiles import solar_profile, load_profile
 
-CIRCUIT_PATH = Path(__file__).parents[2] / "volt-VAR-control" / "circuits" / "ieee13.dss"
-MODELS_ROOT  = Path(__file__).parents[2] / "volt-VAR-control" / "results"
+CIRCUIT_PATH = Path(__file__).parents[1] / "circuits" / "ieee13.dss"
+MODELS_ROOT  = Path(__file__).parents[1] / "models"
 
 _TOTAL_BASE_LOAD_KW = sum(kw for kw, _ in _BASE_LOADS.values())
 
@@ -48,8 +52,8 @@ class SimulationEngine:
             "droop": DroopController(),
             "zero":  ZeroController(),
         }
-        self._load_sac("sac_both", "sac_both/seed_0/sac_both/best_model.zip")
-        self._load_sac("sac_none", "sac_none/seed_0/sac_none/best_model.zip")
+        self._load_sac("sac_both", "sac_both/best_model.zip")
+        self._load_sac("sac_none", "sac_none/best_model.zip")
 
     def _load_sac(self, name: PolicyName, rel_path: str) -> None:
         path = MODELS_ROOT / rel_path
