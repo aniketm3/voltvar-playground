@@ -47,10 +47,12 @@ export default function InfoModal({ onClose }) {
 
           <Section title="Policies">
             <ul>
-              <li><strong>SAC (domain-rand)</strong> — the primary trained agent; most robust to unusual conditions.</li>
-              <li><strong>SAC (no DR)</strong> — trained on fixed conditions; may struggle when pushed outside its training distribution.</li>
-              <li><strong>Droop</strong> — IEEE 1547-2018 rule-based controller; responds to local bus voltage with a piecewise-linear curve. No learning.</li>
-              <li><strong>Zero VAR</strong> — no reactive power control at all. Baseline to see what happens without any VVC.</li>
+              <li><strong>Lag-SAC + domain-rand ★</strong> — Lagrangian-constrained SAC trained with full domain randomization. The Lagrange multiplier explicitly penalizes voltage violations as a hard constraint, making it both safer and more efficient than unconstrained SAC.</li>
+              <li><strong>Lag-SAC + curriculum</strong> — same constrained objective but trained with curriculum learning, starting easy and progressively widening the domain.</li>
+              <li><strong>SAC + domain-rand</strong> — unconstrained SAC with domain randomization. Minimizes a weighted sum of violations and losses but has no hard safety guarantee.</li>
+              <li><strong>SAC (no DR)</strong> — unconstrained SAC on fixed conditions. Struggles when pushed outside its training distribution.</li>
+              <li><strong>Droop (IEEE 1547)</strong> — rule-based controller with a piecewise-linear volt-VAR curve. Zero violations but over-conservative: absorbs maximum VARs and drives losses up.</li>
+              <li><strong>Zero VAR</strong> — no reactive power control. Shows what happens without any VVC.</li>
             </ul>
           </Section>
         </div>

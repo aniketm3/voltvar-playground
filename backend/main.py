@@ -8,7 +8,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from simulator import SimulationEngine, PolicyName
+from simulator import SimulationEngine
+from typing import Literal
+PolicyName = Literal["sac_both", "sac_none", "lag_sac_both", "lag_sac_curriculum", "droop", "zero"]
 
 _engine: SimulationEngine | None = None
 
@@ -33,7 +35,7 @@ app.add_middleware(
 
 
 class SimulateRequest(BaseModel):
-    policy: PolicyName = "sac_both"
+    policy: PolicyName = "lag_sac_both"
     mode: str = Field("single_step", pattern="^(single_step|full_episode)$")
     timestep: int = Field(48, ge=0, le=95)
     solar_scales: list[float] = Field(default_factory=lambda: [1.0, 1.0, 1.0, 1.0])

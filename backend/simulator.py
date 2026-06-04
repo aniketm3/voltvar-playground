@@ -28,7 +28,7 @@ MODELS_ROOT  = Path(__file__).parents[1] / "models"
 
 _TOTAL_BASE_LOAD_KW = sum(kw for kw, _ in _BASE_LOADS.values())
 
-PolicyName = Literal["sac_both", "sac_none", "droop", "zero"]
+PolicyName = Literal["sac_both", "sac_none", "lag_sac_both", "lag_sac_curriculum", "droop", "zero"]
 
 DIST_BUSES = [
     "632", "633", "634", "645", "646",
@@ -52,8 +52,10 @@ class SimulationEngine:
             "droop": DroopController(),
             "zero":  ZeroController(),
         }
-        self._load_sac("sac_both", "sac_both/best_model.zip")
-        self._load_sac("sac_none", "sac_none/best_model.zip")
+        self._load_sac("sac_both",         "sac_both/best_model.zip")
+        self._load_sac("sac_none",         "sac_none/best_model.zip")
+        self._load_sac("lag_sac_both",     "lag_sac_both/best_model.zip")
+        self._load_sac("lag_sac_curriculum","lag_sac_curriculum/best_model.zip")
 
     def _load_sac(self, name: PolicyName, rel_path: str) -> None:
         path = MODELS_ROOT / rel_path

@@ -7,10 +7,12 @@ import InfoModal from './components/InfoModal.jsx'
 import { simulateStep, simulateEpisode } from './api.js'
 
 const POLICIES = [
-  { value: 'sac_both', label: 'SAC (domain-rand)' },
-  { value: 'sac_none', label: 'SAC (no DR)' },
-  { value: 'droop',    label: 'Droop baseline' },
-  { value: 'zero',     label: 'Zero VAR' },
+  { value: 'lag_sac_both',      label: 'Lag-SAC + domain-rand ★' },
+  { value: 'lag_sac_curriculum', label: 'Lag-SAC + curriculum' },
+  { value: 'sac_both',          label: 'SAC + domain-rand' },
+  { value: 'sac_none',          label: 'SAC (no DR)' },
+  { value: 'droop',             label: 'Droop (IEEE 1547)' },
+  { value: 'zero',              label: 'Zero VAR' },
 ]
 
 function formatTime(step) {
@@ -21,11 +23,13 @@ function formatTime(step) {
 }
 
 export default function App() {
-  const [policy,       setPolicy]       = useState('sac_both')
+  // Default to the interesting demo scenario: noon, full sun, light load.
+  // At these settings lag_sac_both shows 1 violation vs droop's 0 (but 3x better losses).
+  const [policy,       setPolicy]       = useState('lag_sac_both')
   const [timestep,     setTimestep]     = useState(48)
-  const [solarScales,  setSolarScales]  = useState([1, 1, 1, 1])
+  const [solarScales,  setSolarScales]  = useState([1.5, 1.5, 1.5, 1.5])
   const [cloudCovers,  setCloudCovers]  = useState([0, 0, 0, 0])
-  const [loadScale,    setLoadScale]    = useState(1.0)
+  const [loadScale,    setLoadScale]    = useState(0.5)
   const [selectedPV,   setSelectedPV]   = useState(null)
 
   const [result,       setResult]       = useState(null)
