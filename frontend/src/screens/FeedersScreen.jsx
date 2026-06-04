@@ -2,8 +2,10 @@ import GridPreview from '../components/GridPreview.jsx'
 
 const POLICY_COLORS = {
   lag_sac_both:       '#3b82f6',
+  lag_sac_solar_load: '#3b82f6',
   lag_sac_curriculum: '#6366f1',
   sac_both:           '#8b5cf6',
+  sac_solar_load:     '#8b5cf6',
   sac_none:           '#a78bfa',
   droop:              '#6b7280',
   zero:               '#9ca3af',
@@ -11,8 +13,10 @@ const POLICY_COLORS = {
 
 const POLICY_SHORT = {
   lag_sac_both:       'Lag-SAC+DR',
+  lag_sac_solar_load: 'Lag-SAC ★',
   lag_sac_curriculum: 'Lag-SAC+Curr',
   sac_both:           'SAC+DR',
+  sac_solar_load:     'SAC+DR',
   sac_none:           'SAC',
   droop:              'Droop',
   zero:               'Zero',
