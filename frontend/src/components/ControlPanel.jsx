@@ -5,39 +5,52 @@ const PV_INVERTERS = [
   { name: 'PV652', bus: '652', kva: 150 },
 ]
 
-// Sinusoidal solar profile matching the backend's profiles.py
-function buildSolarCurve(solarScale, cloudCover) {
-  return Array.from({ length: 96 }, (_, t) => ({
-    t,
-    v: Math.max(0, Math.sin(Math.PI * t / 96)) * solarScale * (1 - cloudCover),
-  }))
-}
-
 function SolarSparkline({ solarScale, cloudCover, currentStep }) {
-  const W = 200
-  const H = 36
-  const data = buildSolarCurve(solarScale, cloudCover)
+  const W = 200, H = 44
 
-  const pts = data.map(({ t, v }) => [
-    (t / 95) * W,
-    H - Math.min(v, 1.5) / 1.5 * (H - 2) - 1,
-  ])
+  const scaleY = v => H - Math.min(v, 1.5) / 1.5 * (H - 4) - 2
 
-  const linePath = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
-  const areaPath = `${linePath} L${W},${H} L0,${H} Z`
+  const times = Array.from({ length: 96 }, (_, t) => {
+    const raw = Math.max(0, Math.sin(Math.PI * t / 96))
+    return {
+      x: (t / 95) * W,
+      pot: raw * solarScale,
+      act: raw * solarScale * (1 - cloudCover),
+    }
+  })
+
+  const potLine = times.map(({ x, pot }, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${scaleY(pot).toFixed(1)}`).join(' ')
+  const actLine = times.map(({ x, act }, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${scaleY(act).toFixed(1)}`).join(' ')
+  const actArea = `${actLine} L${W},${H} L0,${H} Z`
+  const lossArea = `${potLine} L${W},${H} L0,${H} Z`
 
   const curX = ((currentStep / 95) * W).toFixed(1)
 
   return (
-    <div className="sparkline-wrap">
-      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
-        {/* Safe-zone band (≈0.95–1.05 pu effect) subtle fill */}
-        <path d={areaPath} fill="rgba(217, 119, 6, 0.12)" />
-        <path d={linePath} fill="none" stroke="#d97706" strokeWidth="1.5" />
-        {/* Current timestep marker */}
-        <line x1={curX} y1={0} x2={curX} y2={H} stroke="#2563eb" strokeWidth="1.5" strokeDasharray="3 2" />
-      </svg>
-    </div>
+    <>
+      <div className="sparkline-header">
+        <span className="sparkline-label">24h profile</span>
+        <span className="sparkline-legend">
+          <span style={{ color: '#d29922', opacity: 0.5 }}>- -</span> clear sky
+          <span style={{ margin: '0 2px', opacity: 0.4 }}>·</span>
+          <span style={{ color: '#d29922' }}>—</span> w/ clouds
+        </span>
+      </div>
+      <div className="sparkline-wrap">
+        <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+          {/* Cloud loss zone fills from potential down to bottom */}
+          <path d={lossArea} fill="rgba(248, 81, 73, 0.07)" />
+          {/* Actual output area */}
+          <path d={actArea} fill="rgba(210, 153, 34, 0.18)" />
+          {/* Clear-sky potential line */}
+          <path d={potLine} fill="none" stroke="#d29922" strokeWidth="1" strokeDasharray="3 2" opacity="0.5" />
+          {/* Actual output line */}
+          <path d={actLine} fill="none" stroke="#d29922" strokeWidth="1.5" />
+          {/* Current timestep marker */}
+          <line x1={curX} y1={0} x2={curX} y2={H} stroke="#58a6ff" strokeWidth="1.5" strokeDasharray="3 2" />
+        </svg>
+      </div>
+    </>
   )
 }
 
@@ -78,6 +91,7 @@ export default function ControlPanel({
 
       <div className="control-section">
         <div className="section-title">PV Inverters</div>
+        <div className="section-hint">Each inverter has its own independent 24h solar profile</div>
         {PV_INVERTERS.map(({ name, bus, kva }, idx) => {
           const isActive = selectedPV === name
           return (
@@ -85,19 +99,19 @@ export default function ControlPanel({
               <div className={`inverter-name ${isActive ? 'active' : ''}`}>
                 <span className="pv-dot" />
                 {name}
-                <span style={{ color: '#78716c', fontWeight: 400, marginLeft: 4 }}>
+                <span style={{ color: 'var(--muted)', fontWeight: 400, marginLeft: 4 }}>
                   bus {bus} · {kva} kVA
                 </span>
               </div>
               <Slider
-                label="Solar"
+                label="☀ Peak"
                 min={0} max={1.5} step={0.05}
                 value={solarScales[idx]}
                 onChange={v => onSolarScale(idx, v)}
                 format={v => v.toFixed(2)}
               />
               <Slider
-                label="Cloud"
+                label="☁ Cover"
                 min={0} max={1} step={0.05}
                 value={cloudCovers[idx]}
                 onChange={v => onCloudCover(idx, v)}

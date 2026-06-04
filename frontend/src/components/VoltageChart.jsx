@@ -6,7 +6,7 @@ import {
 const BUSES = ['632','633','634','645','646','671','684','611','652','680','692','675']
 
 function barColor(v) {
-  if (!v) return '#d6d3d1'
+  if (!v) return '#21262d'
   if (v < 0.95 || v > 1.05) return '#dc2626'
   if (v < 0.97 || v > 1.03) return '#d97706'
   return '#16a34a'
@@ -22,13 +22,13 @@ const CHART_STYLE = {
   background: 'transparent',
 }
 
-const AXIS_STYLE = { fill: '#78716c', fontSize: 10 }
+const AXIS_STYLE = { fill: '#8b949e', fontSize: 10 }
 const TOOLTIP_STYLE = {
-  background: '#ffffff',
-  border: '1px solid #ddd9d0',
+  background: '#161b22',
+  border: '1px solid #21262d',
   borderRadius: 4,
   fontSize: 11,
-  color: '#1c1917',
+  color: '#c9d1d9',
 }
 
 // ── Single-step bar chart ─────────────────────────────────────────────────────
@@ -88,7 +88,7 @@ function EpisodeChart({ episode, currentStep }) {
         <ReferenceLine y={1.05} stroke="#f85149" strokeDasharray="3 3" strokeWidth={1} />
         <ReferenceLine
           x={formatTime(currentStep)}
-          stroke="#2563eb"
+          stroke="#58a6ff"
           strokeDasharray="4 2"
           strokeWidth={1}
         />
@@ -98,7 +98,7 @@ function EpisodeChart({ episode, currentStep }) {
         />
         <Line
           type="monotone" dataKey="v_max" name="v_max"
-          stroke="#f59e0b" dot={false} strokeWidth={1.5}
+          stroke="#d29922" dot={false} strokeWidth={1.5}
         />
         <Legend wrapperStyle={{ fontSize: 10, color: '#8b949e' }} />
       </LineChart>

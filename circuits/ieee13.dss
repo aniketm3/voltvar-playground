@@ -1,0 +1,99 @@
+! IEEE 13-Bus Test Feeder (distribution network, source at 4.16 kV)
+! Based on IEEE PES Distribution System Analysis Subcommittee Test Feeder.
+! Simplified: no HV transformer; source voltage regulator represented by
+! elevated source pu.  PV inverters added at end-of-feeder buses for VVC.
+!
+! DO NOT add Clear or Solve here — caller controls both.
+
+New Circuit.ieee13 basekv=4.16 pu=1.05 phases=3 bus1=650
+
+! ── Line Codes (ohm/mile, lower-triangular Z matrices) ─────────────────────
+
+New Linecode.601 nphases=3 units=mi
+~ Rmatrix=[0.3465 |0.1560 0.3375 |0.1580 0.1535 0.3414]
+~ Xmatrix=[1.0179 |0.5017 1.0478 |0.4236 0.3849 1.0348]
+~ Cmatrix=[0 |0 0 |0 0 0]
+
+New Linecode.602 nphases=3 units=mi
+~ Rmatrix=[0.7526 |0.1580 0.7475 |0.1560 0.1535 0.7436]
+~ Xmatrix=[1.1814 |0.4236 1.1983 |0.5017 0.3849 1.2112]
+~ Cmatrix=[0 |0 0 |0 0 0]
+
+New Linecode.603 nphases=2 units=mi
+~ Rmatrix=[1.3238 |0.2066 1.3294]
+~ Xmatrix=[1.3569 |0.4591 1.3471]
+~ Cmatrix=[0 |0 0]
+
+New Linecode.604 nphases=2 units=mi
+~ Rmatrix=[1.3238 |0.2066 1.3294]
+~ Xmatrix=[1.3569 |0.4591 1.3471]
+~ Cmatrix=[0 |0 0]
+
+New Linecode.605 nphases=1 units=mi
+~ R1=1.3292 X1=1.3475 C1=0
+
+New Linecode.606 nphases=3 units=mi
+~ Rmatrix=[0.7982 |0.3192 0.7891 |0.2849 0.3192 0.7982]
+~ Xmatrix=[0.4463 |0.0328 0.4041 |-0.0143 0.0328 0.4463]
+~ Cmatrix=[0 |0 0 |0 0 0]
+
+New Linecode.607 nphases=1 units=mi
+~ R1=1.3425 X1=0.5124 C1=0
+
+! ── Distribution Lines ──────────────────────────────────────────────────────
+
+New Line.L650to632 bus1=650.1.2.3  bus2=632.1.2.3  linecode=601 length=2000 units=ft
+New Line.L632to671 bus1=632.1.2.3  bus2=671.1.2.3  linecode=601 length=2000 units=ft
+New Line.L671to680 bus1=671.1.2.3  bus2=680.1.2.3  linecode=601 length=1000 units=ft
+New Line.L632to633 bus1=632.1.2.3  bus2=633.1.2.3  linecode=602 length=500  units=ft
+New Line.L632to645 bus1=632.2.3    bus2=645.2.3    linecode=603 length=500  units=ft
+New Line.L645to646 bus1=645.2.3    bus2=646.2.3    linecode=603 length=300  units=ft
+New Line.L671to684 bus1=671.1.3    bus2=684.1.3    linecode=604 length=300  units=ft
+New Line.L684to652 bus1=684.1      bus2=652.1      linecode=607 length=800  units=ft
+New Line.L684to611 bus1=684.3      bus2=611.3      linecode=605 length=300  units=ft
+! Switch 671→692 (normally closed, modeled as low-impedance line)
+New Line.L671to692 bus1=671.1.2.3  bus2=692.1.2.3  r1=0.01 x1=0.01 length=0.001 units=mi
+New Line.L692to675 bus1=692.1.2.3  bus2=675.1.2.3  linecode=606 length=500  units=ft
+
+! ── Step-Down Transformer 633→634 (4.16 kV → 0.48 kV) ─────────────────────
+
+New Transformer.XFM1 phases=3 windings=2
+~ wdg=1 bus=633.1.2.3 conn=wye kv=4.16 kva=500 %r=1.1 xhl=2
+~ wdg=2 bus=634.1.2.3 conn=wye kv=0.48 kva=500 %r=1.1
+
+! ── Spot Loads ──────────────────────────────────────────────────────────────
+
+New Load.S634a bus1=634.1   phases=1 conn=wye   kv=0.2771 kw=160  kvar=110 model=1
+New Load.S634b bus1=634.2   phases=1 conn=wye   kv=0.2771 kw=120  kvar=90  model=1
+New Load.S634c bus1=634.3   phases=1 conn=wye   kv=0.2771 kw=120  kvar=90  model=1
+New Load.S645  bus1=645.2   phases=1 conn=wye   kv=2.4018 kw=170  kvar=125 model=1
+New Load.S646  bus1=646.2.3 phases=2 conn=delta kv=4.16   kw=230  kvar=132 model=1
+New Load.S652  bus1=652.1   phases=1 conn=wye   kv=2.4018 kw=128  kvar=86  model=1
+New Load.S671  bus1=671.1.2.3 phases=3 conn=delta kv=4.16 kw=1155 kvar=660 model=1
+New Load.S675a bus1=675.1   phases=1 conn=wye   kv=2.4018 kw=485  kvar=190 model=1
+New Load.S675b bus1=675.2   phases=1 conn=wye   kv=2.4018 kw=68   kvar=60  model=1
+New Load.S675c bus1=675.3   phases=1 conn=wye   kv=2.4018 kw=290  kvar=212 model=1
+New Load.S611  bus1=611.3   phases=1 conn=wye   kv=2.4018 kw=170  kvar=80  model=1
+New Load.S692  bus1=692.3   phases=1 conn=wye   kv=2.4018 kw=170  kvar=151 model=1
+New Load.S633a bus1=633.1   phases=1 conn=wye   kv=2.4018 kw=17   kvar=10  model=1
+New Load.S633b bus1=633.2   phases=1 conn=wye   kv=2.4018 kw=66   kvar=38  model=1
+New Load.S633c bus1=633.3   phases=1 conn=wye   kv=2.4018 kw=117  kvar=68  model=1
+
+! ── Shunt Capacitors ────────────────────────────────────────────────────────
+
+New Capacitor.C675 bus1=675.1.2.3 phases=3 kv=4.16  kvar=600
+New Capacitor.C611 bus1=611.3     phases=1 kv=2.4018 kvar=100
+
+! ── PV Inverters (VVC actuators) ────────────────────────────────────────────
+! Four inverters at end-of-feeder buses for maximum voltage control authority.
+! irradiance is overridden at every timestep by the Python env.
+
+New PVSystem.PV675 bus1=675.1.2.3 phases=3 kv=4.16  kva=500 pmpp=450 irradiance=1.0 %cutin=0.05 %cutout=0.05 conn=wye
+New PVSystem.PV680 bus1=680.1.2.3 phases=3 kv=4.16  kva=400 pmpp=360 irradiance=1.0 %cutin=0.05 %cutout=0.05 conn=wye
+New PVSystem.PV611 bus1=611.3     phases=1 kv=2.4018 kva=150 pmpp=135 irradiance=1.0 %cutin=0.05 %cutout=0.05 conn=wye
+New PVSystem.PV652 bus1=652.1     phases=1 kv=2.4018 kva=150 pmpp=135 irradiance=1.0 %cutin=0.05 %cutout=0.05 conn=wye
+
+! ── Voltage Bases ────────────────────────────────────────────────────────────
+
+Set Voltagebases=[4.16, 0.48]
+CalcVoltageBases

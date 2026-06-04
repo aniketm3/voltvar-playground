@@ -1,12 +1,6 @@
-/**
- * SVG visualization of the IEEE 13-bus feeder.
- * Buses are colored by voltage safety; PV inverter buses are clickable.
- */
-
 const W = 620
 const H = 440
 
-// Fixed bus coordinates for this SVG viewport.
 const BUS_POS = {
   '650': { x: 52,  y: 220 },
   '632': { x: 180, y: 220 },
@@ -23,7 +17,6 @@ const BUS_POS = {
   '652': { x: 460, y: 405 },
 }
 
-// [from, to, style?]
 const EDGES = [
   ['650', '632'],
   ['632', '671'],
@@ -39,7 +32,6 @@ const EDGES = [
   ['692', '675'],
 ]
 
-// Map from bus name to PV inverter name (and index into solarScales/cloudCovers).
 const PV_BUSES = {
   '675': { name: 'PV675', idx: 0 },
   '680': { name: 'PV680', idx: 1 },
@@ -48,17 +40,28 @@ const PV_BUSES = {
 }
 
 function voltageColor(v) {
-  if (v === undefined || v === null) return '#9ca3af'
-  if (v < 0.95 || v > 1.05) return '#dc2626'
-  if (v < 0.97 || v > 1.03) return '#d97706'
-  return '#16a34a'
+  if (v === undefined || v === null) return '#3d4454'
+  if (v < 0.95 || v > 1.05) return '#f85149'
+  if (v < 0.97 || v > 1.03) return '#d29922'
+  return '#3fb950'
 }
 
 export default function GridGraph({ voltages, violationBuses, selectedPV, onSelectPV }) {
   return (
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: '100%' }}>
+      <defs>
+        <radialGradient id="bg-grad" cx="50%" cy="45%" r="65%">
+          <stop offset="0%" stopColor="#161b22" />
+          <stop offset="100%" stopColor="#0d1117" />
+        </radialGradient>
+        <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
+          <circle cx="12" cy="12" r="0.75" fill="#1c2333" />
+        </pattern>
+      </defs>
+
       {/* Background */}
-      <rect width={W} height={H} fill="#f8f9fb" rx={8} />
+      <rect width={W} height={H} fill="url(#bg-grad)" rx={8} />
+      <rect width={W} height={H} fill="url(#dots)" rx={8} />
 
       {/* Edges */}
       {EDGES.map(([a, b, style]) => {
@@ -68,7 +71,7 @@ export default function GridGraph({ voltages, violationBuses, selectedPV, onSele
           <line
             key={`${a}-${b}`}
             x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y}
-            stroke={style === 'transformer' ? '#2563eb' : '#9ca3af'}
+            stroke={style === 'transformer' ? '#58a6ff' : '#30363d'}
             strokeWidth={style ? 1.5 : 2}
             strokeDasharray={style === 'transformer' ? '5 3' : style === 'switch' ? '3 3' : undefined}
           />
@@ -77,11 +80,11 @@ export default function GridGraph({ voltages, violationBuses, selectedPV, onSele
 
       {/* Bus nodes */}
       {Object.entries(BUS_POS).map(([bus, { x, y }]) => {
-        const v    = voltages[bus]
-        const col  = voltageColor(v)
-        const isPV = bus in PV_BUSES
-        const isSrc = bus === '650'
-        const pvInfo = PV_BUSES[bus]
+        const v       = voltages[bus]
+        const col     = voltageColor(v)
+        const isPV    = bus in PV_BUSES
+        const isSrc   = bus === '650'
+        const pvInfo  = PV_BUSES[bus]
         const isSelected = isPV && selectedPV === pvInfo?.name
 
         return (
@@ -91,65 +94,60 @@ export default function GridGraph({ voltages, violationBuses, selectedPV, onSele
             onClick={() => isPV && onSelectPV(isSelected ? null : pvInfo.name)}
             style={{ cursor: isPV ? 'pointer' : 'default' }}
           >
-            {/* Outer ring for PV nodes */}
             {isPV && (
               <circle
                 r={22}
                 fill="none"
-                stroke={isSelected ? '#2563eb' : '#d97706'}
+                stroke={isSelected ? '#58a6ff' : '#d29922'}
                 strokeWidth={isSelected ? 2 : 1.5}
-                opacity={0.6}
+                opacity={0.5}
               />
             )}
 
-            {/* Node body */}
             {isSrc ? (
               <rect
                 x={-14} y={-14} width={28} height={28}
-                fill="#e5e7eb" stroke="#6b7280" strokeWidth={1.5}
+                fill="#1e2535" stroke="#8b949e" strokeWidth={1.5}
                 rx={3}
               />
             ) : (
               <circle
                 r={16}
-                fill={col + '18'}
+                fill={col + '22'}
                 stroke={col}
                 strokeWidth={1.5}
               />
             )}
 
-            {/* Bus label */}
             <text
               textAnchor="middle"
               dominantBaseline="central"
               fontSize={10}
-              fontWeight="700"
-              fill={isSrc ? '#6b7280' : col}
+              fontWeight="600"
+              fill={isSrc ? '#8b949e' : col}
             >
               {bus}
             </text>
 
-            {/* Voltage reading below node */}
             {v !== undefined && (
               <text
                 y={22}
                 textAnchor="middle"
                 fontSize={9}
-                fontWeight="600"
+                fontWeight="500"
                 fill={col}
               >
                 {v.toFixed(3)}
               </text>
             )}
 
-            {/* PV label above node */}
             {isPV && (
               <text
-                y={-24}
+                y={-25}
                 textAnchor="middle"
                 fontSize={9}
-                fontWeight="600"
-                fill="#d97706"
+                fontWeight="500"
+                fill="#d29922"
               >
                 {pvInfo.name}
               </text>
@@ -161,13 +159,13 @@ export default function GridGraph({ voltages, violationBuses, selectedPV, onSele
       {/* Legend */}
       <g transform={`translate(12, ${H - 62})`}>
         {[
-          { col: '#16a34a', label: 'Safe (0.95–1.05 pu)' },
-          { col: '#d97706', label: 'Near limit' },
-          { col: '#dc2626', label: 'Violation' },
+          { col: '#3fb950', label: 'Safe (0.95–1.05 pu)' },
+          { col: '#d29922', label: 'Near limit' },
+          { col: '#f85149', label: 'Violation' },
         ].map(({ col, label }, i) => (
           <g key={label} transform={`translate(0, ${i * 16})`}>
             <circle r={5} cx={5} cy={0} fill={col} />
-            <text x={14} dominantBaseline="central" fontSize={9} fill="#6b7280">
+            <text x={14} dominantBaseline="central" fontSize={9} fill="#8b949e">
               {label}
             </text>
           </g>
@@ -179,7 +177,7 @@ export default function GridGraph({ voltages, violationBuses, selectedPV, onSele
         x={(BUS_POS['633'].x + BUS_POS['634'].x) / 2 + 6}
         y={(BUS_POS['633'].y + BUS_POS['634'].y) / 2}
         fontSize={8}
-        fill="#2563eb"
+        fill="#58a6ff"
         dominantBaseline="central"
       >
         XFM
