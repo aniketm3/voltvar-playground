@@ -119,7 +119,6 @@ class VoltVAREnv(gym.Env):
     def _load_circuit(self, rng=None):
         dss.Text.Command("Clear")
         dss.Text.Command(f"Redirect {self.config.circuit_path}")
-        dss.Text.Command("CalcVoltageBases")  # needed for circuits without transformers
 
         cfg = self.dr_config
         if cfg.randomize_grid_params and rng is not None and self.config.base_linecodes:
@@ -194,23 +193,31 @@ class VoltVAREnv(gym.Env):
     # ── Observation and reward ───────────────────────────────────────────────
 
     def _bus_voltage_map(self) -> dict[str, float]:
-        # AllBusMagPu() returns one value per phase (not per bus) and skips
-        # the kV base division for some circuit configs, so we compute pu
-        # explicitly: set each bus active, read VMagAngle (actual V), divide
-        # by kVBase.  Works for single-phase, 2-phase, and 3-phase buses.
+        # VMagAngle() returns actual phase-to-neutral voltages in V.
+        # kVBase() is unreliable for simple radial circuits (CalcVoltageBases
+        # can produce wrong values when there's no transformer).
+        # Use GridConfig.voltage_kv as the nominal base for all main-voltage
+        # buses; fall back to kVBase() only for buses at a distinctly different
+        # level (e.g. transformer secondary like the 13-bus 634 bus at 0.48 kV).
+        nominal_v = self.config.voltage_kv * 1000.0 / (3.0 ** 0.5)  # V, line-to-ground
         result = {}
         for name in [n.lower() for n in dss.Circuit.AllBusNames()]:
             dss.Circuit.SetActiveBus(name)
-            base_kv = dss.Bus.kVBase()        # line-to-ground base in kV
-            if base_kv <= 0:
+            vmag_angle = dss.Bus.VMagAngle()  # [mag_V, angle_deg, ...]
+            if not vmag_angle:
                 result[name] = 1.0
                 continue
-            vmag_angle = dss.Bus.VMagAngle()  # [mag_V, angle_deg, ...]
-            if vmag_angle:
-                mags = vmag_angle[::2]        # magnitudes only
-                result[name] = float(sum(mags) / len(mags)) / (base_kv * 1000)
+            mags   = vmag_angle[::2]
+            avg_v  = float(sum(mags) / len(mags))
+            kv_base = dss.Bus.kVBase()
+            local_v = kv_base * 1000.0
+            # If kVBase indicates a transformer secondary (>15% off from nominal)
+            # use it; otherwise use the config nominal as the base.
+            if local_v > 0 and abs(local_v - nominal_v) / nominal_v > 0.15:
+                base_v = local_v
             else:
-                result[name] = 1.0
+                base_v = nominal_v
+            result[name] = avg_v / base_v
         return result
 
     def _get_obs(self):

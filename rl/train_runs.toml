@@ -1,0 +1,86 @@
+# VoltVAR Explorer — training queue
+# Each [[run]] block is one training job.
+# Runs whose best_model.zip already exists are automatically skipped.
+#
+# Required fields:  grid, condition
+# Optional fields:  lagrangian (bool), timesteps (int), seed (int)
+#
+# grid choices:      ieee13 | ieee33 | res9 | sub18
+# condition choices: none | solar_load | grid | both
+#   (grid/both only meaningful for ieee13 which has named linecodes)
+#
+# Timing estimate (MacBook, CPU only):
+#   200k steps ≈ 12 min/run   |   300k ≈ 17 min   |   400k ≈ 23 min
+
+# ── IEEE 13-Bus (already trained — will be skipped) ──────────────────────────
+
+[[run]]
+grid      = "ieee13"
+condition = "both"
+
+[[run]]
+grid       = "ieee13"
+condition  = "both"
+lagrangian = true
+
+[[run]]
+grid       = "ieee13"
+condition  = "both"
+curriculum = true
+
+# ── IEEE 33-Bus ───────────────────────────────────────────────────────────────
+
+[[run]]
+grid      = "ieee33"
+condition = "solar_load"
+timesteps = 300000
+
+[[run]]
+grid       = "ieee33"
+condition  = "solar_load"
+lagrangian = true
+timesteps  = 300000
+
+[[run]]
+grid       = "ieee33"
+condition  = "solar_load"
+curriculum = true
+timesteps  = 300000
+
+# ── 9-Bus Residential ─────────────────────────────────────────────────────────
+
+[[run]]
+grid      = "res9"
+condition = "solar_load"
+timesteps = 300000
+
+[[run]]
+grid       = "res9"
+condition  = "solar_load"
+lagrangian = true
+timesteps  = 300000
+
+[[run]]
+grid       = "res9"
+condition  = "solar_load"
+curriculum = true
+timesteps  = 300000
+
+# ── 18-Bus Suburban ───────────────────────────────────────────────────────────
+
+[[run]]
+grid      = "sub18"
+condition = "solar_load"
+timesteps = 300000
+
+[[run]]
+grid       = "sub18"
+condition  = "solar_load"
+lagrangian = true
+timesteps  = 300000
+
+[[run]]
+grid       = "sub18"
+condition  = "solar_load"
+curriculum = true
+timesteps  = 300000

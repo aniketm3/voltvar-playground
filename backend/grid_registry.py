@@ -195,9 +195,130 @@ IEEE33 = GridConfig(
 )
 
 
+# ── 9-Bus Residential Feeder ─────────────────────────────────────────────────
+
+GRID9BUS = GridConfig(
+    id          = "res9",
+    name        = "9-Bus Residential",
+    description = "Compact 4.16 kV residential feeder with dense rooftop solar. "
+                  "High PV-to-load ratio creates overvoltage at end-of-feeder "
+                  "buses during midday — the most common real-world VVC challenge.",
+    voltage_kv  = 4.16,
+    circuit_path = REPO_ROOT / "circuits" / "ieee9bus.dss",
+    source_bus  = "1",
+
+    dist_buses     = ["2","3","4","5","6","7","8","9"],
+    pv_names       = ["PV5","PV7","PV9"],
+    pv_kva         = [150.0, 100.0, 100.0],
+    # dist_buses: 2→0, 3→1, 4→2, 5→3, 6→4, 7→5, 8→6, 9→7
+    # PV5→idx 3, PV7→idx 5, PV9→idx 7
+    pv_bus_obs_idx = [3, 5, 7],
+
+    base_loads = {
+        "L2":(100,60), "L3":(80,50),  "L4":(60,40),  "L5":(120,70),
+        "L6":(70,45),  "L7":(90,55),  "L8":(80,50),  "L9":(100,60),
+    },
+    base_linecodes = {},
+    base_caps      = {},
+
+    default_timestep     = 48,
+    default_solar_scales = [1.5, 1.5, 1.5],
+    default_cloud_covers = [0.0, 0.0, 0.0],
+    default_load_scale   = 0.5,
+
+    node_positions = {
+        "1": {"x": 50,  "y": 190},
+        "2": {"x": 180, "y": 190},
+        "3": {"x": 310, "y": 190},
+        "4": {"x": 440, "y": 190},
+        "5": {"x": 560, "y": 190},
+        "6": {"x": 350, "y": 105},
+        "7": {"x": 470, "y": 105},
+        "8": {"x": 220, "y": 285},
+        "9": {"x": 340, "y": 285},
+    },
+    edges = [
+        ["1","2"],["2","3"],["3","4"],["4","5"],
+        ["3","6"],["6","7"],
+        ["2","8"],["8","9"],
+    ],
+)
+
+
+# ── 18-Bus Suburban Feeder ────────────────────────────────────────────────────
+
+_18BUS_LOADS = {
+    "L2":(150,90),  "L3":(120,70),  "L4":(100,60),  "L5":(200,120),
+    "L6":(180,100), "L7":(250,150), "L8":(100,60),  "L9":(120,70),
+    "L10":(150,90), "L11":(80,50),  "L12":(90,55),  "L13":(130,80),
+    "L14":(160,95), "L15":(200,120),"L16":(110,65), "L17":(140,85),
+    "L18":(190,110),
+}
+
+GRID18BUS = GridConfig(
+    id          = "sub18",
+    name        = "18-Bus Suburban",
+    description = "Medium 12.47 kV suburban feeder with four branches and mixed "
+                  "commercial/residential load. Dual-voltage stress: overvoltage "
+                  "at solar peak, undervoltage at evening load peak.",
+    voltage_kv  = 12.47,
+    circuit_path = REPO_ROOT / "circuits" / "ieee18bus.dss",
+    source_bus  = "1",
+
+    dist_buses = [str(i) for i in range(2, 19)],  # 2–18
+    pv_names   = ["PV7","PV10","PV15","PV18"],
+    pv_kva     = [300.0, 200.0, 250.0, 200.0],
+    # dist_buses idx: 2→0 … 7→5, 10→8, 15→13, 18→16
+    pv_bus_obs_idx = [5, 8, 13, 16],
+
+    base_loads     = _18BUS_LOADS,
+    base_linecodes = {},
+    base_caps      = {},
+
+    default_timestep     = 48,
+    default_solar_scales = [1.5, 1.5, 1.5, 1.5],
+    default_cloud_covers = [0.0, 0.0, 0.0, 0.0],
+    default_load_scale   = 0.5,
+
+    node_positions = {
+        "1":  {"x": 35,  "y": 190},
+        "2":  {"x": 100, "y": 190},
+        "3":  {"x": 170, "y": 190},
+        "4":  {"x": 240, "y": 190},
+        "5":  {"x": 310, "y": 190},
+        "6":  {"x": 380, "y": 190},
+        "7":  {"x": 450, "y": 190},
+        # Branch A (upper, from 2)
+        "8":  {"x": 130, "y": 115},
+        "9":  {"x": 200, "y": 115},
+        "10": {"x": 270, "y": 115},
+        # Branch B (upper, from 5)
+        "11": {"x": 340, "y": 115},
+        "12": {"x": 410, "y": 115},
+        # Branch C (lower, from 3)
+        "13": {"x": 200, "y": 268},
+        "14": {"x": 270, "y": 268},
+        "15": {"x": 340, "y": 268},
+        # Branch D (lower, from 6)
+        "16": {"x": 410, "y": 268},
+        "17": {"x": 480, "y": 268},
+        "18": {"x": 550, "y": 268},
+    },
+    edges = [
+        ["1","2"],["2","3"],["3","4"],["4","5"],["5","6"],["6","7"],
+        ["2","8"],["8","9"],["9","10"],
+        ["5","11"],["11","12"],
+        ["3","13"],["13","14"],["14","15"],
+        ["6","16"],["16","17"],["17","18"],
+    ],
+)
+
+
 # ── Registry ──────────────────────────────────────────────────────────────────
 
 GRIDS: dict[str, GridConfig] = {
     "ieee13": IEEE13,
     "ieee33": IEEE33,
+    "res9":   GRID9BUS,
+    "sub18":  GRID18BUS,
 }
