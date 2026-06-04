@@ -2,25 +2,33 @@
 
 from __future__ import annotations
 
+import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import Literal
+
+sys.path.insert(0, str(Path(__file__).parents[1]))
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from grid_registry import GRIDS
 from simulator import SimulationEngine
-from typing import Literal
+
 PolicyName = Literal["sac_both", "sac_none", "lag_sac_both", "lag_sac_curriculum", "droop", "zero"]
 
-_engine: SimulationEngine | None = None
+_engines: dict[str, SimulationEngine] = {}
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _engine
-    print("Loading models and environment...")
-    _engine = SimulationEngine()
-    print("Ready.")
+    print("Loading environments and models...")
+    for grid_id, config in GRIDS.items():
+        print(f"  [{grid_id}] loading...")
+        _engines[grid_id] = SimulationEngine(config)
+        print(f"  [{grid_id}] ready — policies: {_engines[grid_id].available_policies}")
+    print("All engines ready.")
     yield
 
 
@@ -35,31 +43,40 @@ app.add_middleware(
 
 
 class SimulateRequest(BaseModel):
-    policy: PolicyName = "lag_sac_both"
-    mode: str = Field("single_step", pattern="^(single_step|full_episode)$")
-    timestep: int = Field(48, ge=0, le=95)
+    grid_id:      str       = "ieee13"
+    policy:       PolicyName = "lag_sac_both"
+    mode:         str       = Field("single_step", pattern="^(single_step|full_episode)$")
+    timestep:     int       = Field(48, ge=0, le=95)
     solar_scales: list[float] = Field(default_factory=lambda: [1.0, 1.0, 1.0, 1.0])
     cloud_covers: list[float] = Field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0])
-    load_scale: float = Field(1.0, ge=0.1, le=2.0)
+    load_scale:   float     = Field(1.0, ge=0.1, le=2.0)
 
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "engine_ready": _engine is not None}
+    return {"status": "ok", "grids_loaded": list(_engines.keys())}
+
+
+@app.get("/grids")
+async def list_grids():
+    return [
+        config.to_api_dict(_engines[gid].available_policies)
+        for gid, config in GRIDS.items()
+    ]
 
 
 @app.post("/simulate")
 async def simulate(req: SimulateRequest):
-    # async def keeps this on the event loop's main thread.
-    # OpenDSS native lib crashes when called from a thread pool (sync def).
-    # Blocking the event loop is fine for a single-user local demo.
-    if _engine is None:
-        raise HTTPException(503, "Engine not ready")
+    engine = _engines.get(req.grid_id)
+    if engine is None:
+        raise HTTPException(404, f"Unknown grid: {req.grid_id}")
+    if req.policy not in engine.available_policies:
+        raise HTTPException(400, f"Policy '{req.policy}' not available for {req.grid_id}")
+
+    n_pv = GRIDS[req.grid_id].n_pv
+    solar_scales = (req.solar_scales + [1.0] * n_pv)[:n_pv]
+    cloud_covers = (req.cloud_covers + [0.0] * n_pv)[:n_pv]
 
     if req.mode == "full_episode":
-        return _engine.simulate_episode(
-            req.policy, req.solar_scales, req.cloud_covers, req.load_scale
-        )
-    return _engine.simulate_step(
-        req.policy, req.timestep, req.solar_scales, req.cloud_covers, req.load_scale
-    )
+        return engine.simulate_episode(req.policy, solar_scales, cloud_covers, req.load_scale)
+    return engine.simulate_step(req.policy, req.timestep, solar_scales, cloud_covers, req.load_scale)

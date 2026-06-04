@@ -56,6 +56,12 @@ IEEE13 = GridConfig(
     },
     base_caps = {"C675": 600.0, "C611": 100.0},
 
+    # Noon, high solar, light load → 1 violation with lag_sac_both, 12 with zero
+    default_timestep     = 48,
+    default_solar_scales = [1.5, 1.5, 1.5, 1.5],
+    default_cloud_covers = [0.0, 0.0, 0.0, 0.0],
+    default_load_scale   = 0.5,
+
     node_positions = {
         "650": {"x": 52,  "y": 220},
         "632": {"x": 180, "y": 220},
@@ -164,6 +170,12 @@ IEEE33 = GridConfig(
     base_loads     = _IEEE33_BASE_LOADS,
     base_linecodes = {},   # per-line R1/X1 — grid DR not implemented for 33-bus
     base_caps      = {},
+
+    # 6 PM heavy load, low solar → 21 undervoltage violations with zero/droop
+    default_timestep     = 72,
+    default_solar_scales = [0.2, 0.2, 0.2, 0.2],
+    default_cloud_covers = [0.0, 0.0, 0.0, 0.0],
+    default_load_scale   = 1.5,
 
     node_positions = _IEEE33_NODE_POS,
     edges = [

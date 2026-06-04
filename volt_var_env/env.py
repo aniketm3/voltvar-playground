@@ -119,6 +119,7 @@ class VoltVAREnv(gym.Env):
     def _load_circuit(self, rng=None):
         dss.Text.Command("Clear")
         dss.Text.Command(f"Redirect {self.config.circuit_path}")
+        dss.Text.Command("CalcVoltageBases")  # needed for circuits without transformers
 
         cfg = self.dr_config
         if cfg.randomize_grid_params and rng is not None and self.config.base_linecodes:
@@ -193,9 +194,24 @@ class VoltVAREnv(gym.Env):
     # ── Observation and reward ───────────────────────────────────────────────
 
     def _bus_voltage_map(self) -> dict[str, float]:
-        names = [n.lower() for n in dss.Circuit.AllBusNames()]
-        volts = list(dss.Circuit.AllBusMagPu())
-        return dict(zip(names, volts))
+        # AllBusMagPu() returns one value per phase (not per bus) and skips
+        # the kV base division for some circuit configs, so we compute pu
+        # explicitly: set each bus active, read VMagAngle (actual V), divide
+        # by kVBase.  Works for single-phase, 2-phase, and 3-phase buses.
+        result = {}
+        for name in [n.lower() for n in dss.Circuit.AllBusNames()]:
+            dss.Circuit.SetActiveBus(name)
+            base_kv = dss.Bus.kVBase()        # line-to-ground base in kV
+            if base_kv <= 0:
+                result[name] = 1.0
+                continue
+            vmag_angle = dss.Bus.VMagAngle()  # [mag_V, angle_deg, ...]
+            if vmag_angle:
+                mags = vmag_angle[::2]        # magnitudes only
+                result[name] = float(sum(mags) / len(mags)) / (base_kv * 1000)
+            else:
+                result[name] = 1.0
+        return result
 
     def _get_obs(self):
         bus_v    = self._bus_voltage_map()

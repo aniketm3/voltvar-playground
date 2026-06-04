@@ -1,9 +1,5 @@
-const PV_INVERTERS = [
-  { name: 'PV675', bus: '675', kva: 500 },
-  { name: 'PV680', bus: '680', kva: 400 },
-  { name: 'PV611', bus: '611', kva: 150 },
-  { name: 'PV652', bus: '652', kva: 150 },
-]
+// Default used before grid config loads
+const DEFAULT_PV_INVERTERS = []
 
 function SolarSparkline({ solarScale, cloudCover, currentStep }) {
   const W = 200, H = 44
@@ -70,12 +66,22 @@ function Slider({ label, min, max, step, value, onChange, format }) {
 }
 
 export default function ControlPanel({
+  grid,
   timestep,
   loadScale, onLoadScale,
   solarScales, onSolarScale,
   cloudCovers, onCloudCover,
   selectedPV,
 }) {
+  // Build inverter list from grid config
+  const pvInverters = grid
+    ? grid.pv_names.map((name, i) => ({
+        name,
+        bus: grid.pv_buses[name],
+        kva: grid.pv_kva[i],
+      }))
+    : DEFAULT_PV_INVERTERS
+
   return (
     <>
       <div className="control-section">
@@ -92,7 +98,7 @@ export default function ControlPanel({
       <div className="control-section">
         <div className="section-title">PV Inverters</div>
         <div className="section-hint">Each inverter has its own independent 24h solar profile</div>
-        {PV_INVERTERS.map(({ name, bus, kva }, idx) => {
+        {pvInverters.map(({ name, bus, kva }, idx) => {
           const isActive = selectedPV === name
           return (
             <div key={name} className="inverter-block">

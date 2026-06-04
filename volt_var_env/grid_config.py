@@ -59,8 +59,19 @@ class GridConfig:
     def total_base_load_kw(self) -> float:
         return sum(kw for kw, _ in self.base_loads.values())
 
+    # Default scenario shown on first load
+    default_timestep:    int        = 48
+    default_solar_scales: list[float] = field(default_factory=lambda: [1.0, 1.0, 1.0, 1.0])
+    default_cloud_covers: list[float] = field(default_factory=lambda: [0.0, 0.0, 0.0, 0.0])
+    default_load_scale:  float     = 1.0
+
     def to_api_dict(self, available_models: list[str]) -> dict:
         """Serialise for the /grids endpoint (SVG layout included)."""
+        # Map each PV name to its bus: {"PV675": "675", "PV680": "680", ...}
+        pv_buses = {
+            pv: self.dist_buses[idx]
+            for pv, idx in zip(self.pv_names, self.pv_bus_obs_idx)
+        }
         return {
             "id":               self.id,
             "name":             self.name,
@@ -71,7 +82,12 @@ class GridConfig:
             "source_bus":       self.source_bus,
             "pv_names":         self.pv_names,
             "pv_kva":           self.pv_kva,
-            "available_models": available_models,
-            "node_positions":   self.node_positions,
-            "edges":            self.edges,
+            "pv_buses":         pv_buses,
+            "available_models":      available_models,
+            "node_positions":        self.node_positions,
+            "edges":                 self.edges,
+            "default_timestep":      self.default_timestep,
+            "default_solar_scales":  self.default_solar_scales,
+            "default_cloud_covers":  self.default_cloud_covers,
+            "default_load_scale":    self.default_load_scale,
         }
