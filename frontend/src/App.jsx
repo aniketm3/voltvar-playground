@@ -30,7 +30,9 @@ function GridScreen({ grid, onBack }) {
   const [policy,      setPolicy]      = useState(defaultPolicy)
   const [timestep,    setTimestep]    = useState(grid.default_timestep)
   const [solarScales, setSolarScales] = useState(grid.default_solar_scales)
-  const [cloudCovers, setCloudCovers] = useState(grid.default_cloud_covers)
+  const [cloudProfiles, setCloudProfiles] = useState(
+    () => grid.default_cloud_covers.map(c => Array(24).fill(c))
+  )
   const [loadScale,   setLoadScale]   = useState(grid.default_load_scale)
   const [selectedPV,  setSelectedPV]  = useState(null)
 
@@ -58,16 +60,22 @@ function GridScreen({ grid, onBack }) {
   useEffect(() => {
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      runStep({ gridId: grid.id, policy, timestep, solarScales, cloudCovers, loadScale })
+      runStep({
+        gridId: grid.id, policy, timestep, solarScales, loadScale,
+        cloudCovers: cloudProfiles.map(p => p[Math.floor(timestep / 4)]),
+      })
     }, 200)
     return () => clearTimeout(debounceRef.current)
-  }, [grid.id, policy, timestep, solarScales, cloudCovers, loadScale, runStep])
+  }, [grid.id, policy, timestep, solarScales, cloudProfiles, loadScale, runStep])
 
   async function handleRunEpisode() {
     setEpLoading(true)
     setError(null)
     try {
-      const res = await simulateEpisode({ gridId: grid.id, policy, solarScales, cloudCovers, loadScale })
+      const res = await simulateEpisode({
+        gridId: grid.id, policy, solarScales, loadScale,
+        cloudCovers: cloudProfiles.map(p => p.reduce((a, b) => a + b, 0) / p.length),
+      })
       setEpisode(res.episode)
     } catch (e) {
       setError(e.message)
@@ -77,7 +85,18 @@ function GridScreen({ grid, onBack }) {
   }
 
   function handleSolarScale(idx, val) { setSolarScales(p => p.map((v,i) => i===idx ? val : v)); setEpisode(null) }
-  function handleCloudCover(idx, val) { setCloudCovers(p => p.map((v,i) => i===idx ? val : v)); setEpisode(null) }
+  function handleCloudProfile(inverterIdx, hourIdx, val) {
+    setCloudProfiles(prev => prev.map((profile, i) =>
+      i === inverterIdx ? profile.map((v, h) => h === hourIdx ? val : v) : profile
+    ))
+    setEpisode(null)
+  }
+  function handleResetProfile(inverterIdx) {
+    setCloudProfiles(prev => prev.map((profile, i) =>
+      i === inverterIdx ? Array(24).fill(grid.default_cloud_covers[inverterIdx]) : profile
+    ))
+    setEpisode(null)
+  }
   function handlePolicy(val)          { setPolicy(val);    setEpisode(null) }
   function handleLoadScale(val)       { setLoadScale(val); setEpisode(null) }
 
@@ -143,15 +162,18 @@ function GridScreen({ grid, onBack }) {
         </div>
 
         <div className="right-col">
+          <div className="stats-sticky-wrap">
+            <StatsPanel result={result} />
+          </div>
           <ControlPanel
             grid={grid}
             timestep={timestep}
             loadScale={loadScale}    onLoadScale={handleLoadScale}
             solarScales={solarScales} onSolarScale={handleSolarScale}
-            cloudCovers={cloudCovers} onCloudCover={handleCloudCover}
+            cloudProfiles={cloudProfiles} onCloudProfile={handleCloudProfile}
+            onResetProfile={handleResetProfile}
             selectedPV={selectedPV}
           />
-          <StatsPanel result={result} />
         </div>
       </div>
     </div>

@@ -9,6 +9,11 @@ __pycache__/
 frontend/node_modules/
 frontend/dist/
 
+# Models — commit best_model.zip only, not training checkpoints or eval logs
+models/**/checkpoints/
+models/**/eval_logs/
+models/**/final_model.zip
+
 # Logs & temp
 *.log
 .DS_Store

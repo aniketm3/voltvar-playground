@@ -1,50 +1,109 @@
-// Default used before grid config loads
+import { useRef } from 'react'
+
 const DEFAULT_PV_INVERTERS = []
 
-function SolarSparkline({ solarScale, cloudCover, currentStep }) {
-  const W = 200, H = 44
+function SolarProfileEditor({ solarScale, cloudProfile, onCloudProfile, onReset, currentStep }) {
+  const W = 200, H = 80
+  const N = 24
+  const BAR_W = W / N
+  const svgRef = useRef(null)
+  const dragging = useRef(false)
 
-  const scaleY = v => H - Math.min(v, 1.5) / 1.5 * (H - 4) - 2
-
-  const times = Array.from({ length: 96 }, (_, t) => {
-    const raw = Math.max(0, Math.sin(Math.PI * t / 96))
-    return {
-      x: (t / 95) * W,
-      pot: raw * solarScale,
-      act: raw * solarScale * (1 - cloudCover),
-    }
+  const hours = Array.from({ length: N }, (_, h) => {
+    const t = h * 4 + 2  // midpoint 15-min step for this hour
+    const potential = Math.max(0, Math.sin(Math.PI * t / 96)) * solarScale
+    const effective = potential * (1 - cloudProfile[h])
+    return { potential, effective }
   })
 
-  const potLine = times.map(({ x, pot }, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${scaleY(pot).toFixed(1)}`).join(' ')
-  const actLine = times.map(({ x, act }, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${scaleY(act).toFixed(1)}`).join(' ')
-  const actArea = `${actLine} L${W},${H} L0,${H} Z`
-  const lossArea = `${potLine} L${W},${H} L0,${H} Z`
+  const toBarH = v => Math.round((Math.min(v, 1.5) / 1.5) * (H - 4))
 
-  const curX = ((currentStep / 95) * W).toFixed(1)
+  function applyDrag(e) {
+    if (!dragging.current || !svgRef.current) return
+    const rect = svgRef.current.getBoundingClientRect()
+    const cx = e.clientX - rect.left
+    const cy = e.clientY - rect.top
+    const h = Math.max(0, Math.min(N - 1, Math.floor((cx / rect.width) * N)))
+    const { potential } = hours[h]
+    if (potential <= 0.01) return
+    const fraction = 1 - Math.max(0, Math.min(1, cy / rect.height))
+    const newEffective = Math.min(fraction * 1.5, potential)
+    onCloudProfile(h, Math.max(0, Math.min(1, 1 - newEffective / potential)))
+  }
+
+  const currentHour = Math.floor(currentStep / 4)
 
   return (
     <>
       <div className="sparkline-header">
-        <span className="sparkline-label">24h profile</span>
+        <span className="sparkline-label">24h solar profile</span>
         <span className="sparkline-legend">
-          <span style={{ color: '#d29922', opacity: 0.5 }}>- -</span> clear sky
-          <span style={{ margin: '0 2px', opacity: 0.4 }}>·</span>
-          <span style={{ color: '#d29922' }}>—</span> w/ clouds
+          drag · ↑ clear  ↓ overcast
+          <button className="profile-reset-btn" onClick={onReset} title="Reset to default">↺</button>
         </span>
       </div>
       <div className="sparkline-wrap">
-        <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
-          {/* Cloud loss zone fills from potential down to bottom */}
-          <path d={lossArea} fill="rgba(248, 81, 73, 0.07)" />
-          {/* Actual output area */}
-          <path d={actArea} fill="rgba(210, 153, 34, 0.18)" />
-          {/* Clear-sky potential line */}
-          <path d={potLine} fill="none" stroke="#d29922" strokeWidth="1" strokeDasharray="3 2" opacity="0.5" />
-          {/* Actual output line */}
-          <path d={actLine} fill="none" stroke="#d29922" strokeWidth="1.5" />
+        <svg
+          ref={svgRef}
+          width="100%" height="100%"
+          viewBox={`0 0 ${W} ${H}`}
+          preserveAspectRatio="none"
+          style={{ cursor: 'ns-resize', display: 'block', userSelect: 'none' }}
+          onMouseDown={e => { dragging.current = true; applyDrag(e) }}
+          onMouseMove={applyDrag}
+          onMouseUp={() => { dragging.current = false }}
+          onMouseLeave={() => { dragging.current = false }}
+        >
+          {hours.map(({ potential, effective }, h) => {
+            const isDay = potential > 0.01
+            const isCurrent = h === currentHour
+            const potH = toBarH(potential)
+            const effH = toBarH(effective)
+            const x = h * BAR_W + 0.5
+            const bw = BAR_W - 1
+
+            return (
+              <g key={h}>
+                {isDay ? (
+                  <>
+                    {/* Clear-sky potential — dim background */}
+                    <rect
+                      x={x} y={H - potH - 2} width={bw} height={potH}
+                      fill={isCurrent ? 'rgba(210,153,34,0.22)' : 'rgba(210,153,34,0.1)'}
+                    />
+                    {/* Effective output after clouds */}
+                    {effH > 0 && (
+                      <rect
+                        x={x} y={H - effH - 2} width={bw} height={effH}
+                        fill={isCurrent ? 'rgba(210,153,34,0.95)' : 'rgba(210,153,34,0.6)'}
+                      />
+                    )}
+                  </>
+                ) : (
+                  <rect x={x} y={H - 2} width={bw} height={2} fill="rgba(139,148,158,0.15)" />
+                )}
+              </g>
+            )
+          })}
+
+          {/* Hour tick marks at 6h, 12h, 18h */}
+          {[6, 12, 18].map(h => (
+            <line key={h}
+              x1={(h / N) * W} y1={H - 5} x2={(h / N) * W} y2={H}
+              stroke="rgba(139,148,158,0.4)" strokeWidth="1"
+            />
+          ))}
+
           {/* Current timestep marker */}
-          <line x1={curX} y1={0} x2={curX} y2={H} stroke="#58a6ff" strokeWidth="1.5" strokeDasharray="3 2" />
+          <line
+            x1={currentHour * BAR_W + BAR_W / 2} y1={0}
+            x2={currentHour * BAR_W + BAR_W / 2} y2={H}
+            stroke="#58a6ff" strokeWidth="1" strokeDasharray="2 2" opacity="0.7"
+          />
         </svg>
+      </div>
+      <div className="profile-time-labels">
+        <span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h</span>
       </div>
     </>
   )
@@ -70,10 +129,10 @@ export default function ControlPanel({
   timestep,
   loadScale, onLoadScale,
   solarScales, onSolarScale,
-  cloudCovers, onCloudCover,
+  cloudProfiles, onCloudProfile,
+  onResetProfile,
   selectedPV,
 }) {
-  // Build inverter list from grid config
   const pvInverters = grid
     ? grid.pv_names.map((name, i) => ({
         name,
@@ -97,7 +156,7 @@ export default function ControlPanel({
 
       <div className="control-section">
         <div className="section-title">PV Inverters</div>
-        <div className="section-hint">Each inverter has its own independent 24h solar profile</div>
+        <div className="section-hint">Draw a custom 24h weather profile per inverter</div>
         {pvInverters.map(({ name, bus, kva }, idx) => {
           const isActive = selectedPV === name
           return (
@@ -116,16 +175,11 @@ export default function ControlPanel({
                 onChange={v => onSolarScale(idx, v)}
                 format={v => v.toFixed(2)}
               />
-              <Slider
-                label="☁ Cover"
-                min={0} max={1} step={0.05}
-                value={cloudCovers[idx]}
-                onChange={v => onCloudCover(idx, v)}
-                format={v => `${Math.round(v * 100)}%`}
-              />
-              <SolarSparkline
+              <SolarProfileEditor
                 solarScale={solarScales[idx]}
-                cloudCover={cloudCovers[idx]}
+                cloudProfile={cloudProfiles[idx]}
+                onCloudProfile={(h, v) => onCloudProfile(idx, h, v)}
+                onReset={() => onResetProfile(idx)}
                 currentStep={timestep}
               />
             </div>

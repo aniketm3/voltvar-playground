@@ -64,7 +64,7 @@ body {
 }
 
 .right-col {
-  width: 268px;
+  width: 360px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -318,11 +318,39 @@ input[type="range"] {
 }
 
 .sparkline-wrap {
-  height: 44px;
+  height: 80px;
   border: 1px solid var(--border);
   border-radius: 4px;
   overflow: hidden;
   background: var(--bg);
+}
+
+.profile-time-labels {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0 0;
+  font-size: 8px;
+  color: var(--muted);
+  opacity: 0.55;
+}
+
+.profile-reset-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0 0 0 5px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.profile-reset-btn:hover { color: var(--accent); }
+
+.stats-sticky-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface);
 }
 
 /* ── Stats panel ─────────────────────────────────────── */
@@ -532,10 +560,9 @@ input[type="range"] {
 
 .feeders-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
   gap: 20px;
   padding: 32px 48px;
-  max-width: 1100px;
 }
 
 .feeder-card {
@@ -561,7 +588,7 @@ input[type="range"] {
 }
 
 .feeder-card-preview {
-  height: 160px;
+  height: 180px;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
   padding: 10px;
