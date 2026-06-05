@@ -2,7 +2,7 @@ import { useRef } from 'react'
 
 const DEFAULT_PV_INVERTERS = []
 
-function SolarProfileEditor({ solarScale, cloudProfile, onCloudProfile, onReset, currentStep }) {
+function SolarProfileEditor({ solarScale, cloudProfile, onCloudProfile, onReset, onHourDrag, currentStep }) {
   const W = 200, H = 80
   const N = 24
   const BAR_W = W / N
@@ -29,6 +29,7 @@ function SolarProfileEditor({ solarScale, cloudProfile, onCloudProfile, onReset,
     const fraction = 1 - Math.max(0, Math.min(1, cy / rect.height))
     const newEffective = Math.min(fraction * 1.5, potential)
     onCloudProfile(h, Math.max(0, Math.min(1, 1 - newEffective / potential)))
+    onHourDrag(h * 4 + 2)
   }
 
   const currentHour = Math.floor(currentStep / 4)
@@ -131,6 +132,7 @@ export default function ControlPanel({
   solarScales, onSolarScale,
   cloudProfiles, onCloudProfile,
   onResetProfile,
+  onTimestep,
   selectedPV,
 }) {
   const pvInverters = grid
@@ -180,6 +182,7 @@ export default function ControlPanel({
                 cloudProfile={cloudProfiles[idx]}
                 onCloudProfile={(h, v) => onCloudProfile(idx, h, v)}
                 onReset={() => onResetProfile(idx)}
+                onHourDrag={onTimestep}
                 currentStep={timestep}
               />
             </div>

@@ -174,6 +174,7 @@ function GridScreen({ grid, onBack }) {
             solarScales={solarScales} onSolarScale={handleSolarScale}
             cloudProfiles={cloudProfiles} onCloudProfile={handleCloudProfile}
             onResetProfile={handleResetProfile}
+            onTimestep={t => { setTimestep(t); setEpisode(null) }}
             selectedPV={selectedPV}
           />
         </div>
